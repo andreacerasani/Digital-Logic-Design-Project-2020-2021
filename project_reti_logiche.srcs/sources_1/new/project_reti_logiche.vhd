@@ -129,6 +129,66 @@ end Behavioral;
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
+entity datapath is
+port(
+i_clk : in std_logic;
+i_rst : in std_logic;
+--i_start : in std_logic;
+i_data : in std_logic_vector(7 downto 0);
+set_col: in std_logic;
+set_row: in std_logic;
+o_address : out std_logic_vector(15 downto 0);
+--o_done : out std_logic;
+--o_en : out std_logic;
+--o_we : out std_logic;
+o_data : out std_logic_vector (7 downto 0)
+);
+end datapath;
+
+architecture Behavioral of datapath is
+signal col_reg : STD_LOGIC_VECTOR (7 downto 0);
+signal row_reg : STD_LOGIC_VECTOR (7 downto 0);
+signal new_img_addr: STD_LOGIC_VECTOR (15 downto 0);
+signal set_new_img_addr: std_logic;
+
+begin
+    --Column register
+    process(i_clk, i_rst)
+    begin
+        if(i_rst = '1') then
+            col_reg <= "00000000";
+        elsif i_clk'event and i_clk = '1' then
+            if(set_col = '1') then
+                col_reg <= i_data;
+            end if;
+        end if;
+    end process;
+    
+    --Row register
+    process(i_clk, i_rst)
+    begin
+        if(i_rst = '1') then
+            row_reg <= "00000000";
+        elsif i_clk'event and i_clk = '1' then
+            if(set_row = '1') then
+                row_reg <= i_data;
+            end if;
+        end if;
+    end process;
+    
+    --New image address register
+    
+    
+    
+    
+
+end Behavioral;
+    
+
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
 entity project_reti_logiche is
 port (
@@ -145,8 +205,11 @@ o_data : out std_logic_vector (7 downto 0)
 end project_reti_logiche;
 
 architecture Behavioral of project_reti_logiche is
+signal col_reg : STD_LOGIC_VECTOR (7 downto 0);
+signal row_reg : STD_LOGIC_VECTOR (7 downto 0);
+
 
 begin
-
+    
 
 end Behavioral;
