@@ -137,6 +137,13 @@ i_rst : in std_logic;
 i_data : in std_logic_vector(7 downto 0);
 set_col: in std_logic;
 set_row: in std_logic;
+set_col_count: in std_logic;
+set_row_count: in std_logic;
+col_decr: in std_logic; --decrease column
+row_decr: in std_logic; --decrease row
+min_max_en : in std_logic;
+col_zero: out std_logic; -- 1 when column counter reaches zero
+row_zero: out std_logic; --1 when row counter reaches zero
 o_address : out std_logic_vector(15 downto 0);
 --o_done : out std_logic;
 --o_en : out std_logic;
@@ -148,8 +155,34 @@ end datapath;
 architecture Behavioral of datapath is
 signal col_reg : STD_LOGIC_VECTOR (7 downto 0);
 signal row_reg : STD_LOGIC_VECTOR (7 downto 0);
+signal min : STD_LOGIC_VECTOR (7 downto 0);
+signal max : STD_LOGIC_VECTOR (7 downto 0);
 signal new_img_addr: STD_LOGIC_VECTOR (15 downto 0);
 signal set_new_img_addr: std_logic;
+
+	--Min max comparator component
+    component min_max_comparator is
+        port(
+            i_clk : in std_logic;
+            i_rst : in std_logic;
+            i_en : in std_logic;
+            i_data : in std_logic_vector(7 downto 0);
+            o_min : out std_logic_vector(7 downto 0);
+            o_max : out std_logic_vector(7 downto 0)
+            );
+	end component;
+	
+	--Down Counter
+	component down_counter is
+	port (
+		i_clk : in std_logic;
+		i_rst : in std_logic;
+		i_load : in std_logic;
+		i_en : in std_logic;
+		i_data : in std_logic_vector(7 downto 0);
+		o_zero : out std_logic
+		);
+	end component;
 
 begin
     --Column register
@@ -177,9 +210,38 @@ begin
     end process;
     
     --New image address register
+	
     
     
-    
+	
+	MINMAX : min_max_comparator port map(
+		i_clk,
+		i_rst,
+		min_max_en,
+		i_data,
+		min,
+		max
+	);
+	
+	down_counter_col : down_counter port map(
+		i_clk,
+		i_rst,
+		set_col_count,
+		col_decr,
+		col_reg,
+		col_zero
+	);
+	
+	down_counter_row : down_counter port map(
+		i_clk,
+		i_rst,
+		set_row_count,
+		row_decr,
+		row_reg,
+		row_zero
+	);
+	
+	
     
 
 end Behavioral;
