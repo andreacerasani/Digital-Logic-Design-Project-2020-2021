@@ -38,7 +38,7 @@ entity down_counter is
 		i_clk : in std_logic;
 		i_rst : in std_logic;
 		i_load : in std_logic;
-		i_en : in std_logic;
+		i_en : in std_logic; --if 1 counter is decreased
 		i_data : in std_logic_vector(7 downto 0);
 		o_zero : out std_logic
 		);
@@ -60,7 +60,6 @@ begin
 	
 --next-state logic
 	r_next <= unsigned(i_data) when i_load = '1' else
-	
 			r_reg - 1 when (i_en = '1' and not(r_reg = 0))else
 			r_reg;
 			
@@ -126,6 +125,42 @@ begin
 	
 end Behavioral;
 
+-- Component to increase by 1 the memory address
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+entity addr_increaser is
+	port (
+		i_clk : in std_logic;
+		i_rst : in std_logic;
+		i_en : in std_logic; --if 1 addr is increased
+		i_load: in std_logic;
+		i_data : in std_logic_vector(15 downto 0);
+		o_address : out std_logic_vector(15 downto 0)
+		);
+end addr_increaser;
+
+architecture Behavioral of addr_increaser is
+    signal addr_reg: unsigned(15 downto 0);
+    signal addr_next: unsigned(15 downto 0);
+begin
+    --register
+    process(i_clk, i_rst)
+	begin
+		if (i_rst = '1') then 
+			addr_reg <= (others => '0'); --clear
+		elsif (rising_edge(i_clk)) then
+			addr_reg <= addr_next;
+		end if;
+	end process;
+	--next-state logic
+	addr_next <=   unsigned(i_data) when i_load = '1' else
+	               addr_reg + 1  when i_en = '1' else
+	               addr_reg;
+    --output logic
+    o_address <= std_logic_vector(addr_reg);
+    
+end Behavioral;
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
@@ -267,8 +302,8 @@ o_data : out std_logic_vector (7 downto 0)
 end project_reti_logiche;
 
 architecture Behavioral of project_reti_logiche is
-signal col_reg : STD_LOGIC_VECTOR (7 downto 0);
-signal row_reg : STD_LOGIC_VECTOR (7 downto 0);
+--signal col_reg : STD_LOGIC_VECTOR (7 downto 0);
+--signal row_reg : STD_LOGIC_VECTOR (7 downto 0);
 
 
 begin
