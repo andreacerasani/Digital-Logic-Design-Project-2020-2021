@@ -177,6 +177,14 @@ set_row_count: in std_logic;
 col_decr: in std_logic; --decrease column
 row_decr: in std_logic; --decrease row
 min_max_en : in std_logic;
+
+old_img_addr_incr: in std_logic;
+set_old_img_addr: in std_logic;
+old_img_addr_to_load: std_logic_vector(15 downto 0);
+new_img_addr_incr: in std_logic;
+set_new_img_addr: in std_logic;
+o_addr_sel: in std_logic; --0 old image 1 new image
+
 col_zero: out std_logic; -- 1 when column counter reaches zero
 row_zero: out std_logic; --1 when row counter reaches zero
 o_address : out std_logic_vector(15 downto 0);
@@ -192,8 +200,8 @@ signal col_reg : STD_LOGIC_VECTOR (7 downto 0);
 signal row_reg : STD_LOGIC_VECTOR (7 downto 0);
 signal min : STD_LOGIC_VECTOR (7 downto 0);
 signal max : STD_LOGIC_VECTOR (7 downto 0);
-signal new_img_addr: STD_LOGIC_VECTOR (15 downto 0);
-signal set_new_img_addr: std_logic;
+signal old_img_addr:  STD_LOGIC_VECTOR (15 downto 0);
+signal new_img_addr:  STD_LOGIC_VECTOR (15 downto 0);
 
 	--Min max comparator component
     component min_max_comparator is
@@ -218,6 +226,20 @@ signal set_new_img_addr: std_logic;
 		o_zero : out std_logic
 		);
 	end component;
+	
+	--Addr Increaser
+	component addr_increaser is
+	port (
+		i_clk : in std_logic;
+		i_rst : in std_logic;
+		i_en : in std_logic; --if 1 addr is increased
+		i_load: in std_logic;
+		i_data : in std_logic_vector(15 downto 0);
+		o_address : out std_logic_vector(15 downto 0)
+		);
+    end component;
+    
+    
 
 begin
     --Column register
@@ -244,36 +266,57 @@ begin
         end if;
     end process;
     
-    --New image address register
+    --o_addr mux
+    with o_addr_sel select
+        o_address <= old_img_addr when '0',
+                     new_img_addr when '1',
+                     "XXXXXXXXXXXXXXXX" when others;
+                     
 	
     
+    old_image_addr_increaser: addr_increaser port map(
+        i_clk => i_clk,
+        i_rst => i_rst,
+        i_en => old_img_addr_incr,
+        i_load => set_old_img_addr,
+        i_data => old_img_addr_to_load,
+        o_address => old_img_addr
+    );
     
+    new_imag_addr_increaser: addr_increaser port map(
+        i_clk => i_clk,
+        i_rst => i_rst,
+        i_en => new_img_addr_incr,
+        i_load => set_new_img_addr,
+        i_data => old_img_addr,
+        o_address => new_img_addr
+    );    
 	
 	MINMAX : min_max_comparator port map(
-		i_clk,
-		i_rst,
-		min_max_en,
-		i_data,
-		min,
-		max
+		i_clk => i_clk,
+		i_rst => i_rst,
+		i_en => min_max_en,
+		i_data => i_data,
+		o_min => min,
+		o_max => max
 	);
 	
 	down_counter_col : down_counter port map(
-		i_clk,
-		i_rst,
-		set_col_count,
-		col_decr,
-		col_reg,
-		col_zero
+		i_clk => i_clk,
+        i_rst => i_rst,
+		i_load => set_col_count,
+		i_en => col_decr,
+		i_data => col_reg,
+		o_zero => col_zero
 	);
 	
 	down_counter_row : down_counter port map(
-		i_clk,
-		i_rst,
-		set_row_count,
-		row_decr,
-		row_reg,
-		row_zero
+		i_clk => i_clk,
+        i_rst => i_rst,
+		i_load => set_row_count,
+		i_en => row_decr,
+		i_data => row_reg,
+		o_zero => row_zero
 	);
 	
 	
