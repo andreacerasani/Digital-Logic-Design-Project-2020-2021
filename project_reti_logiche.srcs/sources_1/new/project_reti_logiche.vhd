@@ -161,6 +161,60 @@ begin
     o_address <= std_logic_vector(addr_reg);
     
 end Behavioral;
+
+--Combinational component to compute the new value of a pixel of the image
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+use IEEE.NUMERIC_STD.ALL;
+entity new_value_logic is
+    port(
+		i_min: in std_logic_vector(7 downto 0);
+		i_max: in std_logic_vector(7 downto 0);
+		i_old_value: in std_logic_vector(7 downto 0);
+		o_new_value: out std_logic_vector(7 downto 0)
+		);
+end new_value_logic;
+
+architecture Behavioral of new_value_logic is
+    signal delta : integer range 0 to 255;
+    --signal floorlog: STD_LOGIC_VECTOR(3 downto 0);
+    signal floorlog: natural range 0 to 8;
+    --signal shift_level: STD_LOGIC_VECTOR(3 downto 0);
+    signal shift_level: natural range 0 to 8;
+    signal temp_pixel: STD_LOGIC_VECTOR(15 downto 0);
+    
+    begin
+    delta <= to_integer(unsigned(i_max - i_min));
+    --with to_integer(unsigned(delta)) select
+        --floorlog <= "1000" when 255,
+                    --"0111" when 127 to 254,
+                    --"0110" when 63 to 126,
+                    --"0101" when 31 to 62,
+                    --"0100" when 15 to 30,
+                    --"0011" when 7 to 14,
+                    --"0010" when 3 to 6,
+                    --"0001" when 1 to 2,
+                    --"0000" when 0,
+                    --"XXXX" when others;          
+    with delta select
+        floorlog <= 8 when 255,
+                    7 when 127 to 254,
+                    6 when 63 to 126,
+                    5 when 31 to 62,
+                    4 when 15 to 30,
+                    3 when 7 to 14,
+                    2 when 3 to 6,
+                    1 when 1 to 2,
+                    0 when 0;                       
+    shift_level <=  8 - floorlog;
+    temp_pixel <= std_logic_vector(shift_left("00000000" & unsigned(i_old_value - i_min), shift_level));
+    o_new_value <= "11111111" when (temp_pixel > "11111111") else
+                    temp_pixel(7 downto 0);
+                                           
+end Behavioral;
+
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
