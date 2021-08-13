@@ -178,25 +178,12 @@ end new_value_logic;
 
 architecture Behavioral of new_value_logic is
     signal delta : integer range 0 to 255;
-    --signal floorlog: STD_LOGIC_VECTOR(3 downto 0);
     signal floorlog: natural range 0 to 8;
-    --signal shift_level: STD_LOGIC_VECTOR(3 downto 0);
     signal shift_level: natural range 0 to 8;
     signal temp_pixel: STD_LOGIC_VECTOR(15 downto 0);
     
     begin
-    delta <= to_integer(unsigned(i_max - i_min));
-    --with to_integer(unsigned(delta)) select
-        --floorlog <= "1000" when 255,
-                    --"0111" when 127 to 254,
-                    --"0110" when 63 to 126,
-                    --"0101" when 31 to 62,
-                    --"0100" when 15 to 30,
-                    --"0011" when 7 to 14,
-                    --"0010" when 3 to 6,
-                    --"0001" when 1 to 2,
-                    --"0000" when 0,
-                    --"XXXX" when others;          
+    delta <= to_integer(unsigned(i_max - i_min));         
     with delta select
         floorlog <= 8 when 255,
                     7 when 127 to 254,
