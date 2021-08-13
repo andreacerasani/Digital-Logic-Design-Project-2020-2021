@@ -209,7 +209,6 @@ entity datapath is
 port(
 i_clk : in std_logic;
 i_rst : in std_logic;
---i_start : in std_logic;
 i_data : in std_logic_vector(7 downto 0);
 set_col: in std_logic;
 set_row: in std_logic;
@@ -218,20 +217,15 @@ set_row_count: in std_logic;
 col_decr: in std_logic; --decrease column
 row_decr: in std_logic; --decrease row
 min_max_en : in std_logic;
-
 old_img_addr_incr: in std_logic;
 set_old_img_addr: in std_logic;
-old_img_addr_to_load: std_logic_vector(15 downto 0);
+old_img_addr_to_load: in std_logic_vector(15 downto 0);
 new_img_addr_incr: in std_logic;
 set_new_img_addr: in std_logic;
 o_addr_sel: in std_logic; --0 old image 1 new image
-
 col_zero: out std_logic; -- 1 when column counter reaches zero
 row_zero: out std_logic; --1 when row counter reaches zero
 o_address : out std_logic_vector(15 downto 0);
---o_done : out std_logic;
---o_en : out std_logic;
---o_we : out std_logic;
 o_data : out std_logic_vector (7 downto 0)
 );
 end datapath;
@@ -374,7 +368,7 @@ begin
 	   i_min => min,
 	   i_max => max,
 	   i_old_value => i_data,
-	   o_new_value => o_data	
+	   o_new_value => o_data
 	);
 	
 	
@@ -403,11 +397,115 @@ o_data : out std_logic_vector (7 downto 0)
 end project_reti_logiche;
 
 architecture Behavioral of project_reti_logiche is
---signal col_reg : STD_LOGIC_VECTOR (7 downto 0);
---signal row_reg : STD_LOGIC_VECTOR (7 downto 0);
+component datapath is
+port(
+i_clk : in std_logic;
+i_rst : in std_logic;
+i_data : in std_logic_vector(7 downto 0);
+set_col: in std_logic;
+set_row: in std_logic;
+set_col_count: in std_logic;
+set_row_count: in std_logic;
+col_decr: in std_logic; --decrease column
+row_decr: in std_logic; --decrease row
+min_max_en : in std_logic;
+old_img_addr_incr: in std_logic;
+set_old_img_addr: in std_logic;
+old_img_addr_to_load: in std_logic_vector(15 downto 0);
+new_img_addr_incr: in std_logic;
+set_new_img_addr: in std_logic;
+o_addr_sel: in std_logic; --0 old image 1 new image
+col_zero: out std_logic; -- 1 when column counter reaches zero
+row_zero: out std_logic; --1 when row counter reaches zero
+o_address : out std_logic_vector(15 downto 0);
+o_data : out std_logic_vector (7 downto 0)
+);
+end component;
 
+signal set_col: std_logic;
+signal set_row: std_logic;
+signal set_col_count: std_logic;
+signal set_row_count: std_logic;
+signal col_decr: std_logic; --decrease column
+signal row_decr: std_logic; --decrease row
+signal min_max_en : std_logic;
+signal old_img_addr_incr: std_logic;
+signal set_old_img_addr: std_logic;
+signal old_img_addr_to_load: std_logic_vector(15 downto 0);
+signal new_img_addr_incr: std_logic;
+signal set_new_img_addr: std_logic;
+signal o_addr_sel: std_logic; --0 old image 1 new image
+signal col_zero: std_logic; -- 1 when column counter reaches zero
+signal row_zero: std_logic; --1 when row counter reaches zero
+
+type S is (START, COL, ROW, MINMAX, DECR_COL, PHASE_2, READ_ADDR, WRITE);
+signal cur_state, next_state : S;
 
 begin
+    DATAPATH0: datapath port map(
+    i_clk => i_clk,
+    i_rst => i_rst,
+    i_data => i_data,
+    set_col => set_col,
+    set_row => set_row,
+    set_col_count => set_col_count,
+    set_row_count => set_row_count,
+    col_decr => col_decr, --decrease column
+    row_decr => row_decr, --decrease row
+    min_max_en => min_max_en,
+    old_img_addr_incr => old_img_addr_incr,
+    set_old_img_addr => set_old_img_addr,
+    old_img_addr_to_load => old_img_addr_to_load,
+    new_img_addr_incr => new_img_addr_incr,
+    set_new_img_addr => set_new_img_addr,
+    o_addr_sel => o_addr_sel, --0 old image 1 new image
+    col_zero => col_zero, -- 1 when column counter reaches zero
+    row_zero => row_zero, --1 when row counter reaches zero
+    o_address => o_address,
+    o_data => o_data
+    );
+    
+    process(i_clk, i_rst)
+    begin
+        if(i_rst = '1') then
+            cur_state <= START;
+        elsif i_clk'event and i_clk = '1' then
+            cur_state <= next_state;
+        end if;
+    end process;
+    
+    process(cur_state, i_start, col_zero, row_zero)
+    begin
+        next_state <= cur_state;
+        case cur_state is
+            when START =>
+                if i_start = '1' then
+                    next_state <= COL;
+                end if;
+            when COL =>
+                next_state <= ROW;
+            when ROW =>
+                next_state <= MINMAX;
+            when MINMAX =>
+                if col_zero = '1' then
+                    next_state <= PHASE_2;
+                elsif row_zero = '1' then
+                    next_state <= DECR_COL;
+               end if;
+            when PHASE_2 =>
+                next_state <= READ_ADDR;
+            --Completare
+            
+        end case;
+     end process;
+     
+     process(cur_state)
+     begin
+                      
+                       
+                
+    
+    
     
 
 end Behavioral;
