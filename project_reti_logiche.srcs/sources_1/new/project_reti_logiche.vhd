@@ -280,6 +280,16 @@ signal new_img_addr:  STD_LOGIC_VECTOR (15 downto 0);
 		);
     end component;
     
+    --Combinational component to compute the new value of a pixel of the image
+    component new_value_logic is
+    port(
+		i_min: in std_logic_vector(7 downto 0);
+		i_max: in std_logic_vector(7 downto 0);
+		i_old_value: in std_logic_vector(7 downto 0);
+		o_new_value: out std_logic_vector(7 downto 0)
+		);
+    end component;
+    
     
 
 begin
@@ -358,6 +368,13 @@ begin
 		i_en => row_decr,
 		i_data => row_reg,
 		o_zero => row_zero
+	);
+	
+	new_value : new_value_logic port map(
+	   i_min => min,
+	   i_max => max,
+	   i_old_value => i_data,
+	   o_new_value => o_data	
 	);
 	
 	
