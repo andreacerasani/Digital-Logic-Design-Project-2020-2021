@@ -438,7 +438,7 @@ signal o_addr_sel: std_logic; --0 old image 1 new image
 signal col_zero: std_logic; -- 1 when column counter reaches zero
 signal row_zero: std_logic; --1 when row counter reaches zero
 
-type S is (START, COL, ROW, MINMAX, DECR_COL, PHASE_2, READ_ADDR, WRITE);
+type S is (START, COL, ROW, WAITROW, MINMAX_ROW, WAITMINMAX, MINMAX_COL, PHASE_2, READ_ADDR, WRITE);
 signal cur_state, next_state : S;
 
 begin
@@ -485,15 +485,23 @@ begin
             when COL =>
                 next_state <= ROW;
             when ROW =>
-                next_state <= MINMAX;
-            when MINMAX =>
-                if col_zero = '1' then
+                next_state <= WAITROW;
+            when WAITROW =>
+                next_state <= MINMAX_ROW;
+            when MINMAX_ROW =>
+                next_state <= WAITMINMAX;
+            when WAITMINMAX =>
+                 if col_zero = '1' then
                     next_state <= PHASE_2;
                 elsif row_zero = '1' then
-                    next_state <= DECR_COL;
-               end if;
+                    next_state <= MINMAX_COL;
+                else next_state <= MINMAX_ROW;
+                end if;  
             when PHASE_2 =>
                 next_state <= READ_ADDR;
+            when MINMAX_COL => 
+                next_state <= WAITMINMAX;
+             when others =>   
             --Completare
             
         end case;
@@ -501,11 +509,52 @@ begin
      
      process(cur_state)
      begin
+        set_col <= '0';
+        set_row <= '0';
+        set_col_count <= '0';
+        set_row_count <= '0';
+        col_decr <= '0'; --decrease column
+        row_decr <= '0'; --decrease row
+        min_max_en <= '0';
+        old_img_addr_incr<= '0';
+        set_old_img_addr<= '0';
+        old_img_addr_to_load <= "0000000000000000";
+        new_img_addr_incr <= '0';
+        set_new_img_addr <= '0';
+        o_addr_sel <= '0'; --0 old image 1 new image
+        o_done <= '0';
+        o_en <= '0';
+        o_we <= '0';
+        
+        
+        case cur_state is
+            when START =>
+            when COL =>
+                set_col <= '1';
+                old_img_addr_incr <= '1';
+                o_en <= '1';
+           when ROW =>
+                set_row <= '1';
+                set_col_count <= '1'; --Si mantiene il valore dsettato in COL?
+                old_img_addr_incr <= '1';
+            when WAITROW =>
+                set_row_count<= '1';
+                o_en <= '1';
+            when MINMAX_ROW =>
+                row_decr <= '1';
+                min_max_en <= '1';
+                old_img_addr_incr <= '1';
+                o_en <= '1';
+            when WAITMINMAX =>
+                o_en <= '1';
+            when MINMAX_COL =>
+                col_decr <= '1';
+                min_max_en <= '1';
+                set_row_count<= '1';
+                o_en <= '1';    
+           when others => --da togliere 
                       
-                       
-                
-    
-    
-    
-
+        end case;
+    end process; 
+                      
 end Behavioral;
