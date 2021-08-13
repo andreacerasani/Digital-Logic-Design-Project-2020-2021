@@ -71,6 +71,55 @@ end Behavioral;
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
+entity img_down_counter is
+	port (
+		i_clk : in std_logic;
+		i_rst : in std_logic;
+		i_load : in std_logic;
+		i_en : in std_logic; --if 1 counter is decreased
+		i_row : in std_logic_vector(7 downto 0);
+		i_col : in std_logic_vector(7 downto 0);
+		o_zero : out std_logic
+		);
+end img_down_counter;
+
+architecture Behavioral of img_down_counter is
+	signal row_reg : unsigned(7 downto 0); -- internal counter signal
+	signal row_next: unsigned(7 downto 0);
+	signal col_reg : unsigned(7 downto 0); -- internal counter signal
+	signal col_next: unsigned(7 downto 0);
+begin
+--registers
+	process(i_clk, i_rst)
+	begin
+		if (i_rst = '1') then 
+			row_reg <= (others => '0'); --clear
+			col_reg <= (others => '0'); --clear
+		elsif (rising_edge(i_clk)) then
+			row_reg <= row_next;
+			col_reg <= col_next;
+		end if;
+	end process;
+	
+--next-state logic
+	row_next <= unsigned(i_row) when i_load = '1' or (i_en = '1' and row_reg = "00000001") else
+	        (others => '0') when col_reg = 0 else   
+			row_reg - 1 when (i_en = '1' and (row_reg > "00000001")) else
+			row_reg;
+    col_next <= unsigned(i_col) when i_load = '1' else
+			col_reg - 1 when (i_en = '1' and not(col_reg = 0) and row_reg = "00000001") else
+			col_reg;    
+			
+--output logic
+	o_zero <= '1' when col_reg = 0 else '0';
+end Behavioral;
+
+
+
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
 entity min_max_comparator is
 	port(
@@ -200,6 +249,8 @@ architecture Behavioral of new_value_logic is
                     temp_pixel(7 downto 0);
                                            
 end Behavioral;
+
+
 
 
 library IEEE;
@@ -438,7 +489,7 @@ signal o_addr_sel: std_logic; --0 old image 1 new image
 signal col_zero: std_logic; -- 1 when column counter reaches zero
 signal row_zero: std_logic; --1 when row counter reaches zero
 
-type S is (START, COL, ROW, WAITROW, MINMAX_ROW, WAITMINMAX, MINMAX_COL, PHASE_2, READ_ADDR, WRITE);
+type S is (START, COL, ROW, WAITROW, MINMAX_ROW, WAITMINMAX, MINMAX_COL, PHASE_2, READ, WRITE);
 signal cur_state, next_state : S;
 
 begin
@@ -498,9 +549,11 @@ begin
                 else next_state <= MINMAX_ROW;
                 end if;  
             when PHASE_2 =>
-                next_state <= READ_ADDR;
+                next_state <= READ;
             when MINMAX_COL => 
                 next_state <= WAITMINMAX;
+            when READ =>
+                next_state <= WRITE;
              when others =>   
             --Completare
             
@@ -551,7 +604,20 @@ begin
                 col_decr <= '1';
                 min_max_en <= '1';
                 set_row_count<= '1';
-                o_en <= '1';    
+                o_en <= '1';   
+            when PHASE_2 =>
+                set_old_img_addr <= '1';
+                old_img_addr_to_load <= "0000000000000010"; 
+                set_new_img_addr <= '1'; 
+                set_col_count <= '1';
+                set_row_count<= '1';  
+            when READ =>
+                o_en <= '1';
+             when WRITE =>
+                o_en <= '1';
+                o_we <= '1';
+                
+                  
            when others => --da togliere 
                       
         end case;
