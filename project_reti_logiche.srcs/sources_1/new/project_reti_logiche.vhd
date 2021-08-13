@@ -263,10 +263,8 @@ i_rst : in std_logic;
 i_data : in std_logic_vector(7 downto 0);
 set_col: in std_logic;
 set_row: in std_logic;
-set_col_count: in std_logic;
-set_row_count: in std_logic;
-col_decr: in std_logic; --decrease column
-row_decr: in std_logic; --decrease row
+set_img_count: in std_logic;
+count_decr: in std_logic; --decrease image counter
 min_max_en : in std_logic;
 old_img_addr_incr: in std_logic;
 set_old_img_addr: in std_logic;
@@ -274,8 +272,7 @@ old_img_addr_to_load: in std_logic_vector(15 downto 0);
 new_img_addr_incr: in std_logic;
 set_new_img_addr: in std_logic;
 o_addr_sel: in std_logic; --0 old image 1 new image
-col_zero: out std_logic; -- 1 when column counter reaches zero
-row_zero: out std_logic; --1 when row counter reaches zero
+count_zero: out std_logic; -- 1 when image counter reaches zero
 o_address : out std_logic_vector(15 downto 0);
 o_data : out std_logic_vector (7 downto 0)
 );
@@ -301,17 +298,18 @@ signal new_img_addr:  STD_LOGIC_VECTOR (15 downto 0);
             );
 	end component;
 	
-	--Down Counter
-	component down_counter is
+	--Image Down Counter
+	component img_down_counter is
 	port (
 		i_clk : in std_logic;
 		i_rst : in std_logic;
 		i_load : in std_logic;
-		i_en : in std_logic;
-		i_data : in std_logic_vector(7 downto 0);
+		i_en : in std_logic; --if 1 counter is decreased
+		i_row : in std_logic_vector(7 downto 0);
+		i_col : in std_logic_vector(7 downto 0);
 		o_zero : out std_logic
 		);
-	end component;
+    end component;
 	
 	--Addr Increaser
 	component addr_increaser is
@@ -397,22 +395,14 @@ begin
 		o_max => max
 	);
 	
-	down_counter_col : down_counter port map(
+	img_down_counter_0 : img_down_counter port map(
 		i_clk => i_clk,
         i_rst => i_rst,
-		i_load => set_col_count,
-		i_en => col_decr,
-		i_data => col_reg,
-		o_zero => col_zero
-	);
-	
-	down_counter_row : down_counter port map(
-		i_clk => i_clk,
-        i_rst => i_rst,
-		i_load => set_row_count,
-		i_en => row_decr,
-		i_data => row_reg,
-		o_zero => row_zero
+		i_load => set_img_count,
+		i_en => count_decr,
+		i_col => col_reg,
+		i_row => row_reg,
+		o_zero => count_zero
 	);
 	
 	new_value : new_value_logic port map(
@@ -455,10 +445,8 @@ i_rst : in std_logic;
 i_data : in std_logic_vector(7 downto 0);
 set_col: in std_logic;
 set_row: in std_logic;
-set_col_count: in std_logic;
-set_row_count: in std_logic;
-col_decr: in std_logic; --decrease column
-row_decr: in std_logic; --decrease row
+set_img_count: in std_logic;
+count_decr: in std_logic; --decrease image counter
 min_max_en : in std_logic;
 old_img_addr_incr: in std_logic;
 set_old_img_addr: in std_logic;
@@ -466,8 +454,7 @@ old_img_addr_to_load: in std_logic_vector(15 downto 0);
 new_img_addr_incr: in std_logic;
 set_new_img_addr: in std_logic;
 o_addr_sel: in std_logic; --0 old image 1 new image
-col_zero: out std_logic; -- 1 when column counter reaches zero
-row_zero: out std_logic; --1 when row counter reaches zero
+count_zero: out std_logic; -- 1 when image counter reaches zero
 o_address : out std_logic_vector(15 downto 0);
 o_data : out std_logic_vector (7 downto 0)
 );
@@ -475,10 +462,8 @@ end component;
 
 signal set_col: std_logic;
 signal set_row: std_logic;
-signal set_col_count: std_logic;
-signal set_row_count: std_logic;
-signal col_decr: std_logic; --decrease column
-signal row_decr: std_logic; --decrease row
+signal set_img_count: std_logic;
+signal count_decr: std_logic; --decrease image counter
 signal min_max_en : std_logic;
 signal old_img_addr_incr: std_logic;
 signal set_old_img_addr: std_logic;
@@ -486,10 +471,9 @@ signal old_img_addr_to_load: std_logic_vector(15 downto 0);
 signal new_img_addr_incr: std_logic;
 signal set_new_img_addr: std_logic;
 signal o_addr_sel: std_logic; --0 old image 1 new image
-signal col_zero: std_logic; -- 1 when column counter reaches zero
-signal row_zero: std_logic; --1 when row counter reaches zero
+signal count_zero: std_logic; -- 1 when image counter reaches zero
 
-type S is (START, COL, ROW, WAITROW, MINMAX_ROW, WAITMINMAX, MINMAX_COL, PHASE_2, READ, WRITE);
+type S is (START, COL, ROW, WAITROWCOL, MINMAX, WAITMINMAX, PHASE_2, READ, WRITE);
 signal cur_state, next_state : S;
 
 begin
@@ -499,10 +483,8 @@ begin
     i_data => i_data,
     set_col => set_col,
     set_row => set_row,
-    set_col_count => set_col_count,
-    set_row_count => set_row_count,
-    col_decr => col_decr, --decrease column
-    row_decr => row_decr, --decrease row
+    set_img_count => set_img_count,
+    count_decr => count_decr, --decrease counter
     min_max_en => min_max_en,
     old_img_addr_incr => old_img_addr_incr,
     set_old_img_addr => set_old_img_addr,
@@ -510,8 +492,7 @@ begin
     new_img_addr_incr => new_img_addr_incr,
     set_new_img_addr => set_new_img_addr,
     o_addr_sel => o_addr_sel, --0 old image 1 new image
-    col_zero => col_zero, -- 1 when column counter reaches zero
-    row_zero => row_zero, --1 when row counter reaches zero
+    count_zero => count_zero, -- 1 when column counter reaches zero
     o_address => o_address,
     o_data => o_data
     );
@@ -525,7 +506,7 @@ begin
         end if;
     end process;
     
-    process(cur_state, i_start, col_zero, row_zero)
+    process(cur_state, i_start, count_zero)
     begin
         next_state <= cur_state;
         case cur_state is
@@ -536,22 +517,18 @@ begin
             when COL =>
                 next_state <= ROW;
             when ROW =>
-                next_state <= WAITROW;
-            when WAITROW =>
-                next_state <= MINMAX_ROW;
-            when MINMAX_ROW =>
-                next_state <= WAITMINMAX;
+                next_state <= WAITROWCOL;
+            when WAITROWCOL =>
+                next_state <= MINMAX;
+            when MINMAX =>
+                next_state <= WAITMINMAX; 
             when WAITMINMAX =>
-                 if col_zero = '1' then
+                if count_zero = '1' then
                     next_state <= PHASE_2;
-                elsif row_zero = '1' then
-                    next_state <= MINMAX_COL;
-                else next_state <= MINMAX_ROW;
-                end if;  
+                else next_state <= MINMAX;
+                end if;     
             when PHASE_2 =>
                 next_state <= READ;
-            when MINMAX_COL => 
-                next_state <= WAITMINMAX;
             when READ =>
                 next_state <= WRITE;
              when others =>   
@@ -564,10 +541,8 @@ begin
      begin
         set_col <= '0';
         set_row <= '0';
-        set_col_count <= '0';
-        set_row_count <= '0';
-        col_decr <= '0'; --decrease column
-        row_decr <= '0'; --decrease row
+        set_img_count <= '0';
+        count_decr <= '0'; --decrease counter
         min_max_en <= '0';
         old_img_addr_incr<= '0';
         set_old_img_addr<= '0';
@@ -588,29 +563,22 @@ begin
                 o_en <= '1';
            when ROW =>
                 set_row <= '1';
-                set_col_count <= '1'; --Si mantiene il valore dsettato in COL?
                 old_img_addr_incr <= '1';
-            when WAITROW =>
-                set_row_count<= '1';
+            when WAITROWCOL =>
+                set_img_count<= '1';
                 o_en <= '1';
-            when MINMAX_ROW =>
-                row_decr <= '1';
+            when MINMAX =>
+                count_decr <= '1';
                 min_max_en <= '1';
                 old_img_addr_incr <= '1';
-                o_en <= '1';
+                o_en <= '1'; 
             when WAITMINMAX =>
-                o_en <= '1';
-            when MINMAX_COL =>
-                col_decr <= '1';
-                min_max_en <= '1';
-                set_row_count<= '1';
-                o_en <= '1';   
+                o_en <= '1';     
             when PHASE_2 =>
                 set_old_img_addr <= '1';
                 old_img_addr_to_load <= "0000000000000010"; 
                 set_new_img_addr <= '1'; 
-                set_col_count <= '1';
-                set_row_count<= '1';  
+                set_img_count <= '1';  
             when READ =>
                 o_en <= '1';
              when WRITE =>
