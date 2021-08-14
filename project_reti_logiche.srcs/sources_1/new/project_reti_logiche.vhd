@@ -37,6 +37,7 @@ entity down_counter is
 	port (
 		i_clk : in std_logic;
 		i_rst : in std_logic;
+		syn_rst : in std_logic;
 		i_load : in std_logic;
 		i_en : in std_logic; --if 1 counter is decreased
 		i_data : in std_logic_vector(7 downto 0);
@@ -51,7 +52,7 @@ begin
 --register
 	process(i_clk, i_rst)
 	begin
-		if (i_rst = '1') then 
+		if (i_rst = '1') or (rising_edge(i_clk) and (syn_rst = '1')) then 
 			r_reg <= (others => '0'); --clear
 		elsif (rising_edge(i_clk)) then
 			r_reg <= r_next;
@@ -75,6 +76,7 @@ entity img_down_counter is
 	port (
 		i_clk : in std_logic;
 		i_rst : in std_logic;
+		syn_rst : in std_logic;
 		i_load : in std_logic;
 		i_en : in std_logic; --if 1 counter is decreased
 		i_row : in std_logic_vector(7 downto 0);
@@ -92,7 +94,7 @@ begin
 --registers
 	process(i_clk, i_rst)
 	begin
-		if (i_rst = '1') then 
+		if (i_rst = '1') or (rising_edge(i_clk) and (syn_rst = '1')) then 
 			row_reg <= (others => '0'); --clear
 			col_reg <= (others => '0'); --clear
 		elsif (rising_edge(i_clk)) then
@@ -125,6 +127,7 @@ entity min_max_comparator is
 	port(
 		i_clk : in std_logic;
 		i_rst : in std_logic;
+		syn_rst : in std_logic;
 		i_en : in std_logic;
 		i_data : in std_logic_vector(7 downto 0);
 		o_min : out std_logic_vector(7 downto 0);
@@ -141,7 +144,7 @@ begin
 	--max register
 	process(i_clk, i_rst)
     begin
-        if(i_rst = '1') then
+        if(i_rst = '1') or (rising_edge(i_clk) and (syn_rst = '1')) then
             r_max <= "00000000";
         elsif i_clk'event and i_clk = '1' then
             if(i_en = '1') then
@@ -153,7 +156,7 @@ begin
 	--min register
 	process(i_clk, i_rst)
     begin
-        if(i_rst = '1') then
+        if(i_rst = '1') or (rising_edge(i_clk) and (syn_rst = '1')) then
             r_min <= "11111111";
         elsif i_clk'event and i_clk = '1' then
             if(i_en = '1') then
@@ -182,6 +185,7 @@ entity addr_increaser is
 	port (
 		i_clk : in std_logic;
 		i_rst : in std_logic;
+		syn_rst : in std_logic;
 		i_en : in std_logic; --if 1 addr is increased
 		i_load: in std_logic;
 		i_data : in std_logic_vector(15 downto 0);
@@ -196,7 +200,7 @@ begin
     --register
     process(i_clk, i_rst)
 	begin
-		if (i_rst = '1') then 
+		if (i_rst = '1') or (rising_edge(i_clk) and (syn_rst = '1')) then 
 			addr_reg <= (others => '0'); --clear
 		elsif (rising_edge(i_clk)) then
 			addr_reg <= addr_next;
@@ -260,6 +264,7 @@ entity datapath is
 port(
 i_clk : in std_logic;
 i_rst : in std_logic;
+syn_rst : in std_logic;
 i_data : in std_logic_vector(7 downto 0);
 set_col: in std_logic;
 set_row: in std_logic;
@@ -291,6 +296,7 @@ signal new_img_addr:  STD_LOGIC_VECTOR (15 downto 0);
         port(
             i_clk : in std_logic;
             i_rst : in std_logic;
+            syn_rst : in std_logic;
             i_en : in std_logic;
             i_data : in std_logic_vector(7 downto 0);
             o_min : out std_logic_vector(7 downto 0);
@@ -303,6 +309,7 @@ signal new_img_addr:  STD_LOGIC_VECTOR (15 downto 0);
 	port (
 		i_clk : in std_logic;
 		i_rst : in std_logic;
+		syn_rst : in std_logic;
 		i_load : in std_logic;
 		i_en : in std_logic; --if 1 counter is decreased
 		i_row : in std_logic_vector(7 downto 0);
@@ -316,6 +323,7 @@ signal new_img_addr:  STD_LOGIC_VECTOR (15 downto 0);
 	port (
 		i_clk : in std_logic;
 		i_rst : in std_logic;
+		syn_rst : in std_logic;
 		i_en : in std_logic; --if 1 addr is increased
 		i_load: in std_logic;
 		i_data : in std_logic_vector(15 downto 0);
@@ -339,7 +347,7 @@ begin
     --Column register
     process(i_clk, i_rst)
     begin
-        if(i_rst = '1') then
+        if(i_rst = '1')  or (rising_edge(i_clk) and (syn_rst = '1')) then
             col_reg <= "00000000";
         elsif i_clk'event and i_clk = '1' then
             if(set_col = '1') then
@@ -351,7 +359,7 @@ begin
     --Row register
     process(i_clk, i_rst)
     begin
-        if(i_rst = '1') then
+        if(i_rst = '1')  or (rising_edge(i_clk) and (syn_rst = '1')) then
             row_reg <= "00000000";
         elsif i_clk'event and i_clk = '1' then
             if(set_row = '1') then
@@ -371,6 +379,7 @@ begin
     old_image_addr_increaser: addr_increaser port map(
         i_clk => i_clk,
         i_rst => i_rst,
+        syn_rst => syn_rst,
         i_en => old_img_addr_incr,
         i_load => set_old_img_addr,
         i_data => old_img_addr_to_load,
@@ -380,6 +389,7 @@ begin
     new_imag_addr_increaser: addr_increaser port map(
         i_clk => i_clk,
         i_rst => i_rst,
+        syn_rst => syn_rst,
         i_en => new_img_addr_incr,
         i_load => set_new_img_addr,
         i_data => old_img_addr,
@@ -389,6 +399,7 @@ begin
 	MINMAX : min_max_comparator port map(
 		i_clk => i_clk,
 		i_rst => i_rst,
+		syn_rst => syn_rst,
 		i_en => min_max_en,
 		i_data => i_data,
 		o_min => min,
@@ -398,6 +409,7 @@ begin
 	img_down_counter_0 : img_down_counter port map(
 		i_clk => i_clk,
         i_rst => i_rst,
+        syn_rst => syn_rst,
 		i_load => set_img_count,
 		i_en => count_decr,
 		i_col => col_reg,
@@ -442,6 +454,7 @@ component datapath is
 port(
 i_clk : in std_logic;
 i_rst : in std_logic;
+syn_rst : in std_logic;
 i_data : in std_logic_vector(7 downto 0);
 set_col: in std_logic;
 set_row: in std_logic;
@@ -460,6 +473,7 @@ o_data : out std_logic_vector (7 downto 0)
 );
 end component;
 
+signal syn_rst: std_logic;
 signal set_col: std_logic;
 signal set_row: std_logic;
 signal set_img_count: std_logic;
@@ -473,13 +487,14 @@ signal set_new_img_addr: std_logic;
 signal o_addr_sel: std_logic; --0 old image 1 new image
 signal count_zero: std_logic; -- 1 when image counter reaches zero
 
-type S is (START, COL, WAITCOL, ROW , WAITROW, WAITCOUNT, MINMAX, WAITMINMAX, PHASE_2, READ, WRITE, DONE);
+type S is (START, COL, WAITCOL, ROW , WAITROW, WAITCOUNT, MINMAX, WAITMINMAX, PHASE_2, READ, WRITE, RESET, DONE);
 signal cur_state, next_state : S;
 
 begin
     DATAPATH0: datapath port map(
     i_clk => i_clk,
     i_rst => i_rst,
+    syn_rst => syn_rst,
     i_data => i_data,
     set_col => set_col,
     set_row => set_row,
@@ -537,16 +552,21 @@ begin
                 next_state <= WRITE;
             when WRITE =>
                 if count_zero = '1' then
-                    next_state <= DONE;
+                    next_state <= RESET;
                 else next_state <= READ;
                 end if;
+             when RESET =>
+                next_state <= DONE;   
              when DONE =>   
-                next_state <= START;
+                if i_start <= '0' then
+                    next_state <= START;
+                end if;        
         end case;
      end process;
      
      process(cur_state)
      begin
+        syn_rst <= '0';
         set_col <= '0';
         set_row <= '0';
         set_img_count <= '0';
@@ -600,9 +620,10 @@ begin
                 o_we <= '1';
                 o_addr_sel <= '1';
                 new_img_addr_incr <= '1';
+             when RESET =>
+                syn_rst <= '1';   
              when DONE =>
-                o_done <= '1';
-                --i_rst <= '1';              
+                o_done <= '1';              
         end case;
     end process; 
                       
