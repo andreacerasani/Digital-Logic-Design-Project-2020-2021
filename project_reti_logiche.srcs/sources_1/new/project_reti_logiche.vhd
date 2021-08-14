@@ -94,7 +94,7 @@ begin
 --registers
 	process(i_clk, i_rst)
 	begin
-		if (i_rst = '1') or (rising_edge(i_clk) and (syn_rst = '1')) then 
+		if (i_rst = '1') then 
 			row_reg <= (others => '0'); --clear
 			col_reg <= (others => '0'); --clear
 		elsif (rising_edge(i_clk)) then
@@ -104,13 +104,15 @@ begin
 	end process;
 	
 --next-state logic
-	row_next <= unsigned(i_row) when i_load = '1' or (i_en = '1' and row_reg = "00000001") else
-	        (others => '0') when col_reg = 0 else   
-			row_reg - 1 when (i_en = '1' and (row_reg > "00000001")) else
-			row_reg;
-    col_next <= unsigned(i_col) when i_load = '1' else
-			col_reg - 1 when (i_en = '1' and not(col_reg = 0) and row_reg = "00000001") else
-			col_reg;    
+	row_next <= (others => '0') when  syn_rst = '1' else
+                unsigned(i_row) when i_load = '1' or (i_en = '1' and row_reg = "00000001") else
+                (others => '0') when col_reg = 0 else   
+                row_reg - 1 when (i_en = '1' and (row_reg > "00000001")) else
+                row_reg;
+    col_next <= (others => '0') when  syn_rst = '1' else
+                unsigned(i_col) when i_load = '1' else
+                col_reg - 1 when (i_en = '1' and not(col_reg = 0) and row_reg = "00000001") else
+                col_reg;    
 			
 --output logic
 	o_zero <= '1' when col_reg = 0 else '0';
@@ -144,10 +146,12 @@ begin
 	--max register
 	process(i_clk, i_rst)
     begin
-        if(i_rst = '1') or (rising_edge(i_clk) and (syn_rst = '1')) then
+        if(i_rst = '1') then
             r_max <= "00000000";
         elsif i_clk'event and i_clk = '1' then
-            if(i_en = '1') then
+            if (syn_rst = '1') then
+                r_max <= "00000000";
+            elsif(i_en = '1') then
                 r_max <= next_max;
             end if;
         end if;
@@ -156,10 +160,12 @@ begin
 	--min register
 	process(i_clk, i_rst)
     begin
-        if(i_rst = '1') or (rising_edge(i_clk) and (syn_rst = '1')) then
+        if(i_rst = '1') then
             r_min <= "11111111";
         elsif i_clk'event and i_clk = '1' then
-            if(i_en = '1') then
+            if (syn_rst = '1') then
+                r_min <= "11111111";
+            elsif(i_en = '1') then
                 r_min <= next_min;
             end if;
         end if;
@@ -200,14 +206,15 @@ begin
     --register
     process(i_clk, i_rst)
 	begin
-		if (i_rst = '1') or (rising_edge(i_clk) and (syn_rst = '1')) then 
+		if (i_rst = '1') then 
 			addr_reg <= (others => '0'); --clear
 		elsif (rising_edge(i_clk)) then
 			addr_reg <= addr_next;
 		end if;
 	end process;
 	--next-state logic
-	addr_next <=   unsigned(i_data) when i_load = '1' else
+	addr_next <=   (others => '0') when  syn_rst = '1' else
+	               unsigned(i_data) when i_load = '1' else
 	               addr_reg + 1  when i_en = '1' else
 	               addr_reg;
     --output logic
@@ -347,10 +354,12 @@ begin
     --Column register
     process(i_clk, i_rst)
     begin
-        if(i_rst = '1')  or (rising_edge(i_clk) and (syn_rst = '1')) then
+        if(i_rst = '1') then
             col_reg <= "00000000";
         elsif i_clk'event and i_clk = '1' then
-            if(set_col = '1') then
+            if (syn_rst = '1') then
+                col_reg <= "00000000";
+            elsif(set_col = '1') then
                 col_reg <= i_data;
             end if;
         end if;
@@ -359,10 +368,12 @@ begin
     --Row register
     process(i_clk, i_rst)
     begin
-        if(i_rst = '1')  or (rising_edge(i_clk) and (syn_rst = '1')) then
+        if(i_rst = '1') then
             row_reg <= "00000000";
         elsif i_clk'event and i_clk = '1' then
-            if(set_row = '1') then
+            if (syn_rst = '1') then
+                row_reg <= "00000000";
+            elsif(set_row = '1') then
                 row_reg <= i_data;
             end if;
         end if;
