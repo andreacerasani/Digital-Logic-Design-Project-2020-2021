@@ -473,7 +473,7 @@ signal set_new_img_addr: std_logic;
 signal o_addr_sel: std_logic; --0 old image 1 new image
 signal count_zero: std_logic; -- 1 when image counter reaches zero
 
-type S is (START, COL, ROW, WAITROWCOL, MINMAX, WAITMINMAX, PHASE_2, READ, WRITE);
+type S is (START, COL, WAITCOL, ROW , WAITROW, WAITCOUNT, MINMAX, WAITMINMAX, PHASE_2, READ, WRITE);
 signal cur_state, next_state : S;
 
 begin
@@ -512,13 +512,17 @@ begin
         case cur_state is
             when START =>
                 if i_start = '1' then
-                    next_state <= COL;
+                    next_state <= WAITCOL;
                 end if;
+            when WAITCOL =>
+                next_state <= COL;    
             when COL =>
-                next_state <= ROW;
+                next_state <= WAITROW;
+            when WAITROW =>
+                next_state <= ROW;    
             when ROW =>
-                next_state <= WAITROWCOL;
-            when WAITROWCOL =>
+                next_state <= WAITCOUNT;
+            when WAITCOUNT =>
                 next_state <= MINMAX;
             when MINMAX =>
                 next_state <= WAITMINMAX; 
@@ -557,14 +561,18 @@ begin
         
         case cur_state is
             when START =>
+            when WAITCOL =>
+                o_en <= '1';
             when COL =>
                 set_col <= '1';
                 old_img_addr_incr <= '1';
-                o_en <= '1';
+           when WAITROW =>
+                o_en <= '1';     
            when ROW =>
                 set_row <= '1';
                 old_img_addr_incr <= '1';
-            when WAITROWCOL =>
+                o_en <= '1';
+            when WAITCOUNT =>
                 set_img_count<= '1';
                 o_en <= '1';
             when MINMAX =>
