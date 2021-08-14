@@ -284,6 +284,7 @@ old_img_addr_to_load: in std_logic_vector(15 downto 0);
 new_img_addr_incr: in std_logic;
 set_new_img_addr: in std_logic;
 o_addr_sel: in std_logic; --0 old image 1 new image
+zero_pixel: out std_logic; --1 when the image has zero pixels
 count_zero: out std_logic; -- 1 when image counter reaches zero
 o_address : out std_logic_vector(15 downto 0);
 o_data : out std_logic_vector (7 downto 0)
@@ -347,7 +348,6 @@ signal new_img_addr:  STD_LOGIC_VECTOR (15 downto 0);
 		o_new_value: out std_logic_vector(7 downto 0)
 		);
     end component;
-    
     
 
 begin
@@ -435,9 +435,8 @@ begin
 	   o_new_value => o_data
 	);
 	
-	
-    
-
+	zero_pixel <= '1' when (col_reg = "00000000" or row_reg = "00000000") else
+	               '0';
 end Behavioral;
     
 
@@ -478,6 +477,7 @@ old_img_addr_to_load: in std_logic_vector(15 downto 0);
 new_img_addr_incr: in std_logic;
 set_new_img_addr: in std_logic;
 o_addr_sel: in std_logic; --0 old image 1 new image
+zero_pixel: out std_logic; --1 when the image has zero pixels
 count_zero: out std_logic; -- 1 when image counter reaches zero
 o_address : out std_logic_vector(15 downto 0);
 o_data : out std_logic_vector (7 downto 0)
@@ -496,6 +496,7 @@ signal old_img_addr_to_load: std_logic_vector(15 downto 0);
 signal new_img_addr_incr: std_logic;
 signal set_new_img_addr: std_logic;
 signal o_addr_sel: std_logic; --0 old image 1 new image
+signal zero_pixel: std_logic; -- 1 when image has zero pixel
 signal count_zero: std_logic; -- 1 when image counter reaches zero
 
 type S is (START, COL, WAITCOL, ROW , WAITROW, WAITCOUNT, MINMAX, WAITMINMAX, PHASE_2, READ, WRITE, RESET, DONE);
@@ -518,6 +519,7 @@ begin
     new_img_addr_incr => new_img_addr_incr,
     set_new_img_addr => set_new_img_addr,
     o_addr_sel => o_addr_sel, --0 old image 1 new image
+    zero_pixel => zero_pixel,
     count_zero => count_zero, -- 1 when column counter reaches zero
     o_address => o_address,
     o_data => o_data
@@ -532,7 +534,7 @@ begin
         end if;
     end process;
     
-    process(cur_state, i_start, count_zero)
+    process(cur_state, i_start, zero_pixel, count_zero)
     begin
         next_state <= cur_state;
         case cur_state is
@@ -549,7 +551,10 @@ begin
             when ROW =>
                 next_state <= WAITCOUNT;
             when WAITCOUNT =>
-                next_state <= MINMAX;
+                if zero_pixel = '1' then
+                    next_state <= RESET;
+                else next_state <= MINMAX;
+                end if;
             when MINMAX =>
                 next_state <= WAITMINMAX; 
             when WAITMINMAX =>
