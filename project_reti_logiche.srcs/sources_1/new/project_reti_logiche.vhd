@@ -473,7 +473,7 @@ signal set_new_img_addr: std_logic;
 signal o_addr_sel: std_logic; --0 old image 1 new image
 signal count_zero: std_logic; -- 1 when image counter reaches zero
 
-type S is (START, COL, WAITCOL, ROW , WAITROW, WAITCOUNT, MINMAX, WAITMINMAX, PHASE_2, READ, WRITE);
+type S is (START, COL, WAITCOL, ROW , WAITROW, WAITCOUNT, MINMAX, WAITMINMAX, PHASE_2, READ, WRITE, DONE);
 signal cur_state, next_state : S;
 
 begin
@@ -535,9 +535,13 @@ begin
                 next_state <= READ;
             when READ =>
                 next_state <= WRITE;
-             when others =>   
-            --Completare
-            
+            when WRITE =>
+                if count_zero = '1' then
+                    next_state <= DONE;
+                else next_state <= READ;
+                end if;
+             when DONE =>   
+                next_state <= START;
         end case;
      end process;
      
@@ -571,7 +575,6 @@ begin
            when ROW =>
                 set_row <= '1';
                 old_img_addr_incr <= '1';
-                o_en <= '1';
             when WAITCOUNT =>
                 set_img_count<= '1';
                 o_en <= '1';
@@ -589,13 +592,17 @@ begin
                 set_img_count <= '1';  
             when READ =>
                 o_en <= '1';
+                o_addr_sel <= '0';
+                count_decr <= '1';
+                old_img_addr_incr <= '1';
              when WRITE =>
                 o_en <= '1';
                 o_we <= '1';
-                
-                  
-           when others => --da togliere 
-                      
+                o_addr_sel <= '1';
+                new_img_addr_incr <= '1';
+             when DONE =>
+                o_done <= '1';
+                --i_rst <= '1';              
         end case;
     end process; 
                       
